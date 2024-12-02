@@ -8,11 +8,11 @@ version="3.8"
 ##################################################################################
 
 ### Paths to Additional tools/scripts and check if they are installed and found in path ###
-NUCMER=$(which nucmer)
+NUCMER=$(command -v nucmer)
 [[ $NUCMER == "" ]] && echo "ERROR: Cannot find nucmer script using 'which nucmer', make sure MUMmer (=>V4) is installed and in path" && exit
-DELTAFILTER=$(which delta-filter)
+DELTAFILTER=$(command -v delta-filter)
 [[ $NUCMER == "" ]] && echo "ERROR: Cannot find delta-filter script using 'which delta-filter', make sure MUMmer (=>V4) is installed and in path" && exit
-SHOWCOORDS=$(which show-coords)
+SHOWCOORDS=$(command -v show-coords)
 [[ $NUCMER == "" ]] && echo "ERROR: Cannot find dnadiff script using 'which dnadiff', make sure MUMmer (=>V4) is installed and in path" && exit
 
 ##Genomes for alignments##
