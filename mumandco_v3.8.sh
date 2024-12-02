@@ -36,7 +36,6 @@ filter_subtelomeric_region="no"
 #subtelo_coords="subtelomeric_regions_file.csv"
 rDNA_filter="no"
 
-
 #default values, unless denoted when running MUM&Co
 reference_assembly=""
 query_assembly="" 
@@ -46,8 +45,7 @@ threads="1"
 minlen="50"
 blast_step="no"
 
-
-
+##Options 
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -90,7 +88,6 @@ case "$key" in
 	esac
 done
 
-
 #creates error message and exits if these values are not assigned 
 [[ $reference_assembly == "" ]] && echo "ERROR: Path to reference genome not found, assign using -r" && exit
 [[ $query_assembly == "" ]] && echo "ERROR: Path to query genome not found, assign using -q" && exit
@@ -102,15 +99,13 @@ done
 #if blast option is set, check to see if samtools and blast are installed and in path. Exit if not found
 if [[ ${blast_step} == "yes" ]]
 then
-	SAMTOOLS=$(which samtools)
+	SAMTOOLS=$(command -v samtools)
 	[[ $SAMTOOLS == "" ]] && echo "ERROR: Cannot find samtools using 'which samtools', make sure samtools is installed and in path" && exit
-	BLASTN=$(which blastn)
+	BLASTN=$(command -v blastn)
 	[[ $BLASTN == "" ]] && echo "ERROR: Cannot find blastn script using 'which blastn', make sure BLAST is installed and in path" && exit
-	BLASTDB=$(which makeblastdb)
+	BLASTDB=$(command -v makeblastdb)
 	[[ $BLASTDB == "" ]] && echo "ERROR: Cannot find blastdb script using 'which blastdb', make sure BLAST is installed and in path" && exit
 fi
-
-
 
 ###################################################################################
 ###################################################################################
@@ -159,8 +154,6 @@ else
 	fi
 fi
 
-#!/bin/bash
-
 mkdir "$prefix"_alignments
 alignments_folder=""$prefix"_alignments"
 mv ""$prefix"_ref".delta* $alignments_folder/
@@ -172,7 +165,7 @@ echo "                             #   #"
 echo "                ###############################"
 echo "                #                             #"
 echo "                # MUM&Co is open for business #"
-echo "                #           version ${version}       #"
+echo "                #       version ${version}    #"
 echo "                ###############################"
 
 ############################################################################################################
@@ -290,21 +283,21 @@ tail -n +5 "$alignments_folder/""$prefix"_ref".delta_filter.coordsg" |\
 
 ##filter any remaining alignments with less than (1.25 x standard deviation) less than the average of the remaining alignments
 ##actually filter out alignments that are smaller than 1kb after the chromosome pairing (helps with less contiguous query genomes)
-average_quality=$(cat ""$prefix"_pre_list.txt" | awk '{sum+=$7} END{print sum/NR}')
+average_quality=$(awk '{sum+=$7} END{print sum/NR}' "$prefix"_pre_list.txt)
 
 if [[ "$average_quality" == "100" ]]
 	then
 
-		cat ""$prefix"_pre_list.txt" | awk  '{print $14"\t"$15}' | sort | uniq > ""$prefix"_chromosome_pairs.txt"
+		awk '{print $14"\t"$15}' "$prefix"_pre_list.txt | sort -u > "$prefix"_chromosome_pairs.txt
 	
 		awk 'NR==FNR{a[$1,$2]++;next};a[$14,$15] {print $0}' ""$prefix"_chromosome_pairs.txt" "$alignments_folder/""$prefix"_ref".delta_filter.coordsg" | awk -v minlen="$minlen" '{if($5 > minlen) print}' > ""$prefix"_ref".coordsg_matched
 		awk 'NR==FNR{a[$1,$2]++;next};a[$15,$14] {print $0}' ""$prefix"_chromosome_pairs.txt" "$alignments_folder/""$prefix"_query".delta_filter.coordsg" | awk -v minlen="$minlen" '{if($5 > minlen) print}' > ""$prefix"_query".coordsg_matched
 
 	else
 
-		stdev125=$(cat ""$prefix"_pre_list.txt" | awk '{sum=sum+$7 ; sumX2+=(($7)^2)} END{print 1.25*(sqrt(sumX2/(NR) - ((sum/NR)^2)))}')
-		quality_filt=$(echo $average_quality - $stdev125 | bc)
-		cat ""$prefix"_pre_list.txt" | awk -v quality_filt="$quality_filt" '{if($7 > quality_filt) print $14"\t"$15}' | sort | uniq > ""$prefix"_chromosome_pairs.txt"
+		stdev125=$(awk '{sum=sum+$7 ; sumX2+=(($7)^2)} END{print 1.25*(sqrt(sumX2/(NR) - ((sum/NR)^2)))}' "$prefix"_pre_list.txt)
+		quality_filt=$(echo "$average_quality - $stdev125" | bc)
+		awk -v quality_filt="$quality_filt" '{if($7 > quality_filt) print $14"\t"$15}' "$prefix"_pre_list.txt | sort -u > "$prefix"_chromosome_pairs.txt
 	
 		awk 'NR==FNR{a[$1,$2]++;next};a[$14,$15] {print $0}' ""$prefix"_chromosome_pairs.txt" "$alignments_folder/""$prefix"_ref".delta_filter.coordsg" | awk -v minlen="$minlen" '{if($5 > minlen) print}' > ""$prefix"_ref".coordsg_matched
 		awk 'NR==FNR{a[$1,$2]++;next};a[$15,$14] {print $0}' ""$prefix"_chromosome_pairs.txt" "$alignments_folder/""$prefix"_query".delta_filter.coordsg" | awk -v minlen="$minlen" '{if($5 > minlen) print}' > ""$prefix"_query".coordsg_matched
